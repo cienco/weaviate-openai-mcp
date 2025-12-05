@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: weaviate-mcp
+    env: python
+    plan: free
+    startCommand: python serve.py
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: WEAVIATE_URL
+        sync: false
+      - key: WEAVIATE_API_KEY
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: MCP_PATH
+        value: /mcp/
+      - key: BASE_URL
+        value: https://weaviate-openai-app-sdk.onrender.com
