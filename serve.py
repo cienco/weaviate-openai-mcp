@@ -3,6 +3,7 @@ import os
 import json
 import time
 import uuid
+import logging
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 import mcp.types as types
@@ -10,6 +11,27 @@ import mcp.types as types
 from mcp.server.fastmcp import FastMCP
 from mcp.server.transport_security import TransportSecuritySettings
 from starlette.responses import JSONResponse
+
+# Configura il logging per ridurre il rumore degli errori ClosedResourceError
+# Questi errori sono normali quando i client si disconnettono prima che la risposta sia completa
+class ClosedResourceFilter(logging.Filter):
+    """Filtra i traceback di ClosedResourceError che sono normali in HTTP streamable."""
+    def filter(self, record):
+        # Filtra i traceback di ClosedResourceError (sia nel messaggio che nel traceback)
+        msg = str(record.getMessage())
+        exc_info = str(record.exc_info) if record.exc_info else ""
+        exc_text = str(record.exc_text) if hasattr(record, 'exc_text') and record.exc_text else ""
+        
+        if "ClosedResourceError" in msg or "ClosedResourceError" in exc_info or "ClosedResourceError" in exc_text:
+            return False
+        return True
+
+# Applica il filtro ai logger rilevanti
+logging.getLogger("mcp.server.streamable_http").addFilter(ClosedResourceFilter())
+logging.getLogger("anyio").addFilter(ClosedResourceFilter())
+# Riduci il livello di logging per questi moduli per evitare traceback eccessivi
+logging.getLogger("mcp.server.streamable_http").setLevel(logging.WARNING)
+logging.getLogger("anyio").setLevel(logging.WARNING)
 
 # --- Weaviate client imports (v4) ---
 import weaviate
